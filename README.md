@@ -14,11 +14,66 @@ pip install kindling
 
 ## Usage
 
-```python
-from kindling import example_function
+`kindling.logging` provides a `@trace` decorator that traces calls, returns, and
+exceptions via the stdlib `logging` module, plus a `configure()` function for
+library-wide defaults.
 
-result = example_function()
+```python
+import logging
+from kindling.logging import trace, configure
+
+# 1. Opt in to output. Without this, kindling emits nothing.
+configure({"add_console_handler": True, "level": "DEBUG"})
+
+# 2. Decorate a function — bare form.
+@trace
+def add(a: int, b: int) -> int:
+  return a + b
+
+# 3. Decorate with per-call options — a DecoratorOptions dict.
+@trace({"include_private": True, "max_repr_length": None})
+def process(payload: dict) -> str:
+  return payload["id"]
+
+# 4. Decorate an entire class — all eligible methods are wrapped, including
+#    __init__. staticmethod, classmethod, and property are handled correctly.
+#    Dunder methods are skipped by default; pass {"include_dunder": True} to
+#    include them (a small recursion-safety blocklist always applies).
+@trace
+class Service:
+  def __init__(self, name: str) -> None:
+    self.name = name
+
+  def greet(self) -> str:
+    return f"hello, {self.name}"
+
+# 5. Redact sensitive fields via a stdlib logging.Filter — kindling exposes
+#    structured values on every record as `kindling_*` attributes.
+class RedactPasswords(logging.Filter):
+  def filter(self, record: logging.LogRecord) -> bool:
+    kwargs = getattr(record, "kindling_kwargs", None)
+    if isinstance(kwargs, dict) and "password" in kwargs:
+      kwargs["password"] = "'***'"
+    return True
+
+logging.getLogger(__name__).addFilter(RedactPasswords())
 ```
+
+### Levels and behavior
+
+- Enter, exit, argument, and return tracing emit at `DEBUG`.
+- Exceptions caught by the decorator emit at `ERROR` with full traceback, then
+  the original exception is re-raised unchanged.
+- At `INFO`, only exceptions surface; at `DEBUG`, everything surfaces.
+
+### v1 limitations
+
+- **Generators:** the *call* is traced (and the returned generator object is
+  logged as the return value), but per-`yield` iteration is NOT traced.
+- **Async generators:** same as generators — call-only tracing.
+- **Inherited methods** of a `@trace`-decorated class are NOT re-wrapped; only
+  attributes defined directly on the class are.
+- **Redaction** is not built in — use a stdlib `logging.Filter` as shown above.
 
 ## Development
 
