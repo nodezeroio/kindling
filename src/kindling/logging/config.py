@@ -14,7 +14,7 @@ from typing import Any, TypedDict
 
 
 class DecoratorOptions(TypedDict, total=False):
-  """Options meaningful on an individual ``@log`` target.
+  """Options meaningful on an individual ``@trace`` target.
 
   Also valid as ``configure()`` defaults. All keys are optional. Note that because
   ``bool`` is a subtype of ``int`` in Python, ``{"max_repr_length": True}`` will
@@ -33,7 +33,7 @@ class LoggingConfig(DecoratorOptions, total=False):
 
   Superset of :class:`DecoratorOptions` plus the global-only keys. Decorator-relevant
   keys (those inherited from :class:`DecoratorOptions`) establish the defaults used by
-  ``@log`` when an option is not specified on the decorator itself.
+  ``@trace`` when an option is not specified on the decorator itself.
   """
 
   level: int | str
