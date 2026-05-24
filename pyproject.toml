@@ -1,13 +1,13 @@
 [project]
 name = "kindling"
-requires-python=">=3.14"
-version="0.0.1"
-[tool.poetry]
-name = "kindling"
 version = "0.1.0"
 description = "Contains assorted shared utilities like logging for python applications"
-authors = ["Thomas Bell <github@thomasbell.io>"]
+requires-python = ">=3.14"
 readme = "README.md"
+authors = [{ name = "Thomas Bell", email = "github@thomasbell.io" }]
+license = { file = "LICENSE.md" }
+
+[tool.poetry]
 packages = [{include = "kindling", from = "src"}]
 
 [tool.poetry.dependencies]

@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `propagate` now apply to every logger in `attach_to`.
 
 ### Changed
+- Consolidated `pyproject.toml` metadata under PEP 621 `[project]`
+  (single source of truth for name, version, description, authors,
+  license, readme, requires-python); removed the duplicated fields from
+  `[tool.poetry]`. Version aligned to `0.1.0`.
+- README install section now documents git-based install for pip and
+  Poetry (with branch / tag / commit pinning) and notes that this package
+  is not published to PyPI. Fixed stale GitHub Actions badge URL.
 
 ### Deprecated
 

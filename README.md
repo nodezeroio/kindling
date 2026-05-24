@@ -3,13 +3,46 @@
 Contains assorted shared utilities like logging for python applications
 
 
-[![Tests](https://github.com/thomasbellio/kindling/actions/workflows/pr.yml/badge.svg)](https://github.com/thomasbellio/kindling/actions/workflows/pr.yml)
+[![Tests](https://github.com/nodezeroio/kindling/actions/workflows/pr.yml/badge.svg)](https://github.com/nodezeroio/kindling/actions/workflows/pr.yml)
 
 
 ## Installation
 
+`kindling` is installed directly from this GitHub repo — it is not
+published to PyPI.
+
+### pip
+
 ```bash
-pip install kindling
+# Latest from the default branch
+pip install git+https://github.com/nodezeroio/kindling.git
+
+# Pin to a tag, branch, or commit SHA
+pip install git+https://github.com/nodezeroio/kindling.git@v0.1.0
+pip install git+https://github.com/nodezeroio/kindling.git@master
+pip install git+https://github.com/nodezeroio/kindling.git@<commit-sha>
+```
+
+To pin in a `requirements.txt`:
+
+```
+kindling @ git+https://github.com/nodezeroio/kindling.git@v0.1.0
+```
+
+### Poetry
+
+```bash
+poetry add git+https://github.com/nodezeroio/kindling.git
+# Pin to a ref:
+poetry add git+https://github.com/nodezeroio/kindling.git#v0.1.0
+```
+
+Or declare the dependency directly in your `pyproject.toml`:
+
+```toml
+[tool.poetry.dependencies]
+kindling = { git = "https://github.com/nodezeroio/kindling.git", branch = "master" }
+# Or pin: tag = "v0.1.0"  /  rev = "<commit-sha>"
 ```
 
 ## Usage
