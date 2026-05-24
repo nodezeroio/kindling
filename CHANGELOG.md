@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ColorFormatter` and `color: bool` flag on `LoggingConfig` for colorized
   console output (blue DEBUG, green INFO, yellow WARNING, red ERROR/CRITICAL);
   auto-disables on non-TTY streams unless `force_color=True`.
+- `attach_to: list[str]` flag on `LoggingConfig` letting the managed console
+  handler attach to additional logger names (e.g., the consumer's app
+  namespace or root via `[""]`). Defaults to `["kindling"]`. `level` and
+  `propagate` now apply to every logger in `attach_to`.
 
 ### Changed
 

@@ -43,6 +43,7 @@ class LoggingConfig(DecoratorOptions, total=False):
   console_format: str
   propagate: bool
   color: bool
+  attach_to: list[str]
 
 
 _KINDLING_LOGGER_NAME = "kindling"
@@ -68,11 +69,13 @@ class _ResolvedConfig:
   console_format: str = _DEFAULT_CONSOLE_FORMAT
   propagate: bool = True
   color: bool = False
+  attach_to: tuple[str, ...] = (_KINDLING_LOGGER_NAME,)
 
 
 _DEFAULTS: _ResolvedConfig = _ResolvedConfig()
 _current: _ResolvedConfig = _DEFAULTS
 _kindling_console_handler: logging.Handler | None = None
+_kindling_console_handler_targets: tuple[str, ...] = ()
 _lock = threading.Lock()
 
 _ALL_KEYS: tuple[str, ...] = (
@@ -86,6 +89,7 @@ _ALL_KEYS: tuple[str, ...] = (
   "console_format",
   "propagate",
   "color",
+  "attach_to",
 )
 
 
@@ -102,29 +106,46 @@ def configure(config: LoggingConfig) -> None:
     preserved at their current value (last-writer-wins per key across calls).
   - **``None`` vs missing for ``max_repr_length``:** an explicit ``None`` disables
     truncation; omitting the key preserves the current value.
-  - **Console handler idempotency:** repeated calls never stack duplicate
-    kindling-owned console handlers. The single tracked handler is removed before a
-    fresh one is attached.
+  - **Console handler idempotency:** the single managed handler instance is detached
+    from every logger it was previously attached to before a fresh one is built, so
+    repeated calls never stack duplicates.
+  - **``attach_to``:** controls which loggers the managed console handler is attached
+    to (default: ``["kindling"]``). Names may be any valid logger name, including
+    ``""`` for the root logger. Duplicates are silently de-duplicated, preserving
+    first occurrence order. When present, ``level`` and ``propagate`` are also
+    applied to every logger named in the (post-merge) ``attach_to``.
   """
-  global _current, _kindling_console_handler
+  global _current, _kindling_console_handler, _kindling_console_handler_targets
   with _lock:
     changes: dict[str, Any] = {}
     for key in _ALL_KEYS:
       if key in config:
-        changes[key] = config[key]  # type: ignore[literal-required]
+        if key == "attach_to":
+          # Dedupe while preserving first-occurrence order; store as tuple for frozen dataclass.
+          changes[key] = tuple(dict.fromkeys(config[key]))  # type: ignore[literal-required]
+        else:
+          changes[key] = config[key]  # type: ignore[literal-required]
     new_config = dataclasses.replace(_current, **changes)
     _current = new_config
 
-    kindling_logger = logging.getLogger(_KINDLING_LOGGER_NAME)
     if "level" in config and new_config.level is not None:
-      kindling_logger.setLevel(new_config.level)
+      for name in new_config.attach_to:
+        logging.getLogger(name).setLevel(new_config.level)
     if "propagate" in config:
-      kindling_logger.propagate = new_config.propagate
+      for name in new_config.attach_to:
+        logging.getLogger(name).propagate = new_config.propagate
 
-    if "add_console_handler" in config or "console_format" in config or "color" in config:
+    if (
+      "add_console_handler" in config
+      or "console_format" in config
+      or "color" in config
+      or "attach_to" in config
+    ):
       if _kindling_console_handler is not None:
-        kindling_logger.removeHandler(_kindling_console_handler)
+        for name in _kindling_console_handler_targets:
+          logging.getLogger(name).removeHandler(_kindling_console_handler)
         _kindling_console_handler = None
+        _kindling_console_handler_targets = ()
       if new_config.add_console_handler:
         handler = logging.StreamHandler()
         formatter: logging.Formatter
@@ -133,5 +154,7 @@ def configure(config: LoggingConfig) -> None:
         else:
           formatter = logging.Formatter(new_config.console_format)
         handler.setFormatter(formatter)
-        kindling_logger.addHandler(handler)
+        for name in new_config.attach_to:
+          logging.getLogger(name).addHandler(handler)
         _kindling_console_handler = handler
+        _kindling_console_handler_targets = new_config.attach_to

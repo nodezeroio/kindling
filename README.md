@@ -74,6 +74,59 @@ configure({"add_console_handler": True, "color": True, "level": "DEBUG"})
 `ColorFormatter` is also exported for consumers who manage their own
 handlers; pass `force_color=True` if you need codes on a non-TTY stream.
 
+### Using kindling's handler for your own loggers
+
+`kindling` uses stdlib `logging` — create loggers with
+`logging.getLogger(__name__)` as you would with any library. Both
+`@trace`-decorated functions and inline `log.info(...)` calls go to those
+consumer-owned loggers, NOT to the `"kindling"` logger.
+
+By default the handler installed by
+`configure({"add_console_handler": True})` is attached only to
+`getLogger("kindling")`, so it never sees records emitted under your
+application's namespace. To route your loggers through kindling's colored
+output, pass `attach_to` with the logger name(s) you want covered:
+
+```python
+import logging
+from kindling.logging import configure, trace
+
+# Attach the managed console handler to your app namespace (and/or "" for root).
+configure({
+  "add_console_handler": True,
+  "color": True,
+  "level": "DEBUG",
+  "attach_to": ["myapp"],
+})
+
+log = logging.getLogger(__name__)  # e.g. "myapp.services"
+
+@trace
+def fetch(id: int) -> dict:
+  log.info("starting fetch for %s", id)   # surfaces through kindling's handler
+  return {"id": id}
+
+fetch(42)
+```
+
+This produces both the `DEBUG` enter/exit records from `@trace` AND the
+`INFO` line from the inline `log.info(...)` call, all formatted by the
+kindling-managed handler and colored by level.
+
+Notes:
+- `attach_to` defaults to `["kindling"]`. Override it with one or more
+  logger names; pass `[""]` to attach to the root logger if you want
+  global catchment.
+- When `level` and `propagate` are supplied to `configure(...)`, they
+  apply to every logger in `attach_to`.
+- Reconfiguring is idempotent: a fresh `configure(...)` detaches the
+  managed handler from its previous targets before re-attaching, so
+  duplicates never stack.
+- Listing both an ancestor and one of its descendants (e.g.
+  `["myapp", "myapp.db"]`) will cause records under the descendant to be
+  emitted twice (once directly, once via propagation). This is a config
+  choice on the consumer side, not auto-detected by kindling.
+
 ### Levels and behavior
 
 - Enter, exit, argument, and return tracing emit at `DEBUG`.
