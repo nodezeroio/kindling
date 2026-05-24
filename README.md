@@ -59,6 +59,21 @@ class RedactPasswords(logging.Filter):
 logging.getLogger(__name__).addFilter(RedactPasswords())
 ```
 
+### Colorized console output
+
+Set `color: True` when enabling the console handler to colorize the
+`%(levelname)s` field by severity (blue DEBUG, green INFO, yellow WARNING,
+red ERROR/CRITICAL). Colors auto-disable when stderr is not a TTY, so piped
+output and CI logs stay free of escape sequences.
+
+```python
+from kindling.logging import configure
+configure({"add_console_handler": True, "color": True, "level": "DEBUG"})
+```
+
+`ColorFormatter` is also exported for consumers who manage their own
+handlers; pass `force_color=True` if you need codes on a non-TTY stream.
+
 ### Levels and behavior
 
 - Enter, exit, argument, and return tracing emit at `DEBUG`.

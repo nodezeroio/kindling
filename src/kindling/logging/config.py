@@ -12,6 +12,8 @@ import logging
 import threading
 from typing import Any, TypedDict
 
+from kindling.logging.formatter import ColorFormatter
+
 
 class DecoratorOptions(TypedDict, total=False):
   """Options meaningful on an individual ``@trace`` target.
@@ -40,6 +42,7 @@ class LoggingConfig(DecoratorOptions, total=False):
   add_console_handler: bool
   console_format: str
   propagate: bool
+  color: bool
 
 
 _KINDLING_LOGGER_NAME = "kindling"
@@ -64,6 +67,7 @@ class _ResolvedConfig:
   add_console_handler: bool = False
   console_format: str = _DEFAULT_CONSOLE_FORMAT
   propagate: bool = True
+  color: bool = False
 
 
 _DEFAULTS: _ResolvedConfig = _ResolvedConfig()
@@ -81,6 +85,7 @@ _ALL_KEYS: tuple[str, ...] = (
   "add_console_handler",
   "console_format",
   "propagate",
+  "color",
 )
 
 
@@ -116,12 +121,17 @@ def configure(config: LoggingConfig) -> None:
     if "propagate" in config:
       kindling_logger.propagate = new_config.propagate
 
-    if "add_console_handler" in config or "console_format" in config:
+    if "add_console_handler" in config or "console_format" in config or "color" in config:
       if _kindling_console_handler is not None:
         kindling_logger.removeHandler(_kindling_console_handler)
         _kindling_console_handler = None
       if new_config.add_console_handler:
         handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(new_config.console_format))
+        formatter: logging.Formatter
+        if new_config.color:
+          formatter = ColorFormatter(new_config.console_format, stream=handler.stream)
+        else:
+          formatter = logging.Formatter(new_config.console_format)
+        handler.setFormatter(formatter)
         kindling_logger.addHandler(handler)
         _kindling_console_handler = handler

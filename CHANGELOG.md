@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NullHandler` attached to the `"kindling"` logger at import so the library
   never produces output unless the consumer opts in via
   `configure({"add_console_handler": True})`.
+- `ColorFormatter` and `color: bool` flag on `LoggingConfig` for colorized
+  console output (blue DEBUG, green INFO, yellow WARNING, red ERROR/CRITICAL);
+  auto-disables on non-TTY streams unless `force_color=True`.
 
 ### Changed
 
